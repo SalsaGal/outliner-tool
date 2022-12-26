@@ -1,8 +1,9 @@
-use std::{path::Path, fs::File, io::Read};
+mod picture;
+
+use std::path::Path;
 
 use eframe::App;
-use egui_extras::RetainedImage;
-use image::{DynamicImage, RgbaImage};
+use picture::Picture;
 use rfd::FileDialog;
 
 fn main() {
@@ -14,27 +15,23 @@ fn main() {
 }
 
 struct ProcessApp {
-    sources: Vec<RgbaImage>,
+    pictures: Vec<Picture>
 }
 
 impl ProcessApp {
     pub fn new() -> Self {
         Self {
-            sources: Vec::new(),
+            pictures: Vec::new(),
         }
     }
 
     fn load_image<P: AsRef<Path>>(&mut self, path: P) {
-        let mut image_bytes = Vec::new();
-        let mut file = File::open(&path).unwrap();
-        file.read_to_end(&mut image_bytes).unwrap();
-        let image = image::open(&path).unwrap().to_rgba8();
-        self.sources.push(image);
+        self.pictures.push(Picture::new(path).unwrap());
     }
 }
 
 impl App for ProcessApp {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         for file in &ctx.input().raw.dropped_files {
             if let Some(path) = &file.path {
                 self.load_image(path);
@@ -51,7 +48,7 @@ impl App for ProcessApp {
                 }
             }
             if ui.button("Clear images").clicked() {
-                self.sources.clear();
+                self.pictures.clear();
             }
         });
         egui::CentralPanel::default().show(ctx, |ui| {
