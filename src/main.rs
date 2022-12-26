@@ -53,6 +53,9 @@ impl App for ProcessApp {
         });
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::both().show(ui, |ui| {
+                for picture in &self.pictures {
+                    picture.draw(ui, ctx);
+                }
             });
         });
     }
