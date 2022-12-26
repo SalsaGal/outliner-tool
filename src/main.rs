@@ -3,6 +3,7 @@ mod picture;
 use std::path::Path;
 
 use eframe::App;
+use egui::Slider;
 use picture::{Picture, Filter};
 use rfd::FileDialog;
 
@@ -30,6 +31,12 @@ impl ProcessApp {
     fn load_image<P: AsRef<Path>>(&mut self, path: P) {
         self.pictures.push(Picture::new(path, &self.filter).unwrap());
     }
+
+    fn update_filtered(&mut self) {
+        for picture in &mut self.pictures {
+            picture.update(&self.filter);
+        }
+    }
 }
 
 impl App for ProcessApp {
@@ -51,6 +58,15 @@ impl App for ProcessApp {
             }
             if ui.button("Clear images").clicked() {
                 self.pictures.clear();
+            }
+
+            let mut sensitivity = self.filter.sensitivity;
+            ui.label("Sensitivity");
+            ui.add(Slider::new(&mut sensitivity, 0..=255));
+
+            if sensitivity != self.filter.sensitivity {
+                self.filter.sensitivity = sensitivity;
+                self.update_filtered();
             }
         });
         egui::CentralPanel::default().show(ctx, |ui| {
