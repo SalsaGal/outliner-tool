@@ -1,3 +1,8 @@
+use process::Process;
+
+mod process;
+
 fn main() {
-    println!("Hello, world!");
+    let process = Process::new(image::open("test/test.png").unwrap()).unwrap();
+    process.process().save("test/out.png").unwrap();
 }
