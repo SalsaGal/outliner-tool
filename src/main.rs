@@ -80,6 +80,10 @@ impl App for ProcessApp {
             ui.label("Outline");
             color_edit_button_rgba(ui, &mut outline, egui::color_picker::Alpha::Opaque);
 
+            let mut background = self.filter.background;
+            ui.label("Background");
+            color_edit_button_rgba(ui, &mut background, egui::color_picker::Alpha::OnlyBlend);
+
             let mut changed = false;
             if sensitivity != self.filter.sensitivity {
                 self.filter.sensitivity = sensitivity;
@@ -87,6 +91,10 @@ impl App for ProcessApp {
             }
             if outline != self.filter.outline {
                 self.filter.outline = outline;
+                changed = true;
+            }
+            if background != self.filter.background {
+                self.filter.background = background;
                 changed = true;
             }
             if changed {

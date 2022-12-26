@@ -41,6 +41,7 @@ impl Picture {
 pub struct Filter {
     pub sensitivity: u8,
     pub outline: egui::Rgba,
+    pub background: egui::Rgba,
 }
 
 impl Filter {
@@ -48,7 +49,7 @@ impl Filter {
         RgbaImage::from_fn(source.width(), source.height(), |x, y| {
             let original = source.get_pixel(x, y);
             if original.0[3] < self.sensitivity {
-                Rgba([0, 0, 0, 0])
+                Rgba(self.background.to_srgba_unmultiplied())
             } else {
                 Rgba(self.outline.to_srgba_unmultiplied())
             }
@@ -61,6 +62,7 @@ impl Default for Filter {
         Self {
             sensitivity: 128,
             outline: egui::Rgba::from_rgba_unmultiplied(0.0, 0.0, 0.0, 1.0),
+            background: egui::Rgba::from_rgba_unmultiplied(0.0, 0.0, 0.0, 0.0),
         }
     }
 }
