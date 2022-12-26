@@ -3,7 +3,7 @@ mod picture;
 use std::path::Path;
 
 use eframe::App;
-use picture::Picture;
+use picture::{Picture, Filter};
 use rfd::FileDialog;
 
 fn main() {
@@ -15,18 +15,20 @@ fn main() {
 }
 
 struct ProcessApp {
-    pictures: Vec<Picture>
+    pictures: Vec<Picture>,
+    filter: Filter,
 }
 
 impl ProcessApp {
     pub fn new() -> Self {
         Self {
             pictures: Vec::new(),
+            filter: Filter::default(),
         }
     }
 
     fn load_image<P: AsRef<Path>>(&mut self, path: P) {
-        self.pictures.push(Picture::new(path).unwrap());
+        self.pictures.push(Picture::new(path, &self.filter).unwrap());
     }
 }
 
