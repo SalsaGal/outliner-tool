@@ -33,8 +33,8 @@ impl Picture {
         ));
     }
 
-    pub fn draw(&self, ui: &mut Ui, ctx: &Context) {
-        ui.image(self.drawn.texture_id(ctx), self.drawn.size_vec2());
+    pub fn draw(&self, ui: &mut Ui, ctx: &Context, scale: f32) {
+        ui.image(self.drawn.texture_id(ctx), self.drawn.size_vec2() * scale);
     }
 }
 

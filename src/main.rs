@@ -20,6 +20,7 @@ fn main() {
 struct ProcessApp {
     pictures: Vec<Picture>,
     filter: Filter,
+    scale: f32,
 }
 
 impl ProcessApp {
@@ -27,6 +28,7 @@ impl ProcessApp {
         Self {
             pictures: Vec::new(),
             filter: Filter::default(),
+            scale: 1.0,
         }
     }
 
@@ -84,6 +86,9 @@ impl App for ProcessApp {
             ui.label("Background");
             color_edit_button_rgba(ui, &mut background, egui::color_picker::Alpha::OnlyBlend);
 
+            ui.label("Scale");
+            ui.add(Slider::new(&mut self.scale, 0.125..=4.0));
+
             let mut changed = false;
             if sensitivity != self.filter.sensitivity {
                 self.filter.sensitivity = sensitivity;
@@ -104,7 +109,7 @@ impl App for ProcessApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::both().show(ui, |ui| {
                 for picture in &self.pictures {
-                    picture.draw(ui, ctx);
+                    picture.draw(ui, ctx, self.scale);
                 }
             });
         });
