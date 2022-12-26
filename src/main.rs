@@ -7,6 +7,8 @@ use egui::Slider;
 use picture::{Picture, Filter};
 use rfd::FileDialog;
 
+const VERSION: &str = "0.1.0";
+
 fn main() {
     eframe::run_native(
         "Outliner",
@@ -49,6 +51,7 @@ impl App for ProcessApp {
 
         egui::SidePanel::left("actions").show(ctx, |ui| {
             ui.heading("Outliner");
+            ui.label(format!("v{VERSION}"));
             if ui.button("Open images").clicked() {
                 if let Some(paths) = FileDialog::new().pick_files() {
                     for path in paths {
