@@ -60,9 +60,11 @@ impl App for ProcessApp {
             }
         });
         egui::CentralPanel::default().show(ctx, |ui| {
-            for (_, image) in &self.images {
-                ui.image(image.texture_id(ctx), image.size_vec2());
-            }
+            egui::ScrollArea::both().show(ui, |ui| {
+                for (_, image) in &self.images {
+                    ui.image(image.texture_id(ctx), image.size_vec2());
+                }
+            });
         });
     }
 }
