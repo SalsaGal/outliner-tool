@@ -40,6 +40,7 @@ impl Picture {
 
 pub struct Filter {
     pub sensitivity: u8,
+    pub outline: egui::Rgba,
 }
 
 impl Filter {
@@ -49,7 +50,7 @@ impl Filter {
             if original.0[3] < self.sensitivity {
                 Rgba([0, 0, 0, 0])
             } else {
-                Rgba([0, 0, 0, 255])
+                Rgba(self.outline.to_srgba_unmultiplied())
             }
         })
     }
@@ -59,6 +60,7 @@ impl Default for Filter {
     fn default() -> Self {
         Self {
             sensitivity: 128,
+            outline: egui::Rgba::from_rgba_unmultiplied(0.0, 0.0, 0.0, 1.0),
         }
     }
 }
