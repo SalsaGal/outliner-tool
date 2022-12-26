@@ -6,6 +6,7 @@ use image::{RgbaImage, Rgba};
 
 pub struct Picture {
     source: RgbaImage,
+    pub filtered: RgbaImage,
     drawn: RetainedImage,
 }
 
@@ -19,15 +20,16 @@ impl Picture {
         ));
         Some(Self {
             source,
+            filtered,
             drawn,
         })
     }
 
     pub fn update(&mut self, filter: &Filter) {
-        let filtered = filter.on_source(&self.source);
+        self.filtered = filter.on_source(&self.source);
         self.drawn = RetainedImage::from_color_image("", ColorImage::from_rgba_unmultiplied(
-            [filtered.dimensions().0 as usize, filtered.dimensions().1 as usize],
-            filtered.as_flat_samples().as_slice(),
+            [self.filtered.dimensions().0 as usize, self.filtered.dimensions().1 as usize],
+            self.filtered.as_flat_samples().as_slice(),
         ));
     }
 

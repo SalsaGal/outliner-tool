@@ -59,6 +59,15 @@ impl App for ProcessApp {
             if ui.button("Clear images").clicked() {
                 self.pictures.clear();
             }
+            if ui.button("Save images").clicked() {
+                if let Some(folder) = FileDialog::new().pick_folder() {
+                    for (index, picture) in self.pictures.iter().enumerate() {
+                        let mut path = folder.clone();
+                        path.push(format!("{index}.png"));
+                        picture.filtered.save(path).unwrap();
+                    }
+                }
+            }
 
             let mut sensitivity = self.filter.sensitivity;
             ui.label("Sensitivity");
