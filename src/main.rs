@@ -2,7 +2,7 @@ use std::{path::Path, fs::File, io::Read};
 
 use eframe::App;
 use egui_extras::RetainedImage;
-use image::DynamicImage;
+use image::{DynamicImage, RgbaImage};
 use rfd::FileDialog;
 
 fn main() {
@@ -14,13 +14,13 @@ fn main() {
 }
 
 struct ProcessApp {
-    images: Vec<(DynamicImage, RetainedImage)>
+    sources: Vec<RgbaImage>,
 }
 
 impl ProcessApp {
     pub fn new() -> Self {
         Self {
-            images: Vec::new(),
+            sources: Vec::new(),
         }
     }
 
@@ -28,13 +28,8 @@ impl ProcessApp {
         let mut image_bytes = Vec::new();
         let mut file = File::open(&path).unwrap();
         file.read_to_end(&mut image_bytes).unwrap();
-        self.images.push((
-            image::open(&path).unwrap(),
-            RetainedImage::from_image_bytes(
-                AsRef::as_ref(&path).to_str().unwrap().to_owned(),
-                &image_bytes,
-            ).unwrap()
-        ));
+        let image = image::open(&path).unwrap().to_rgba8();
+        self.sources.push(image);
     }
 }
 
@@ -56,14 +51,11 @@ impl App for ProcessApp {
                 }
             }
             if ui.button("Clear images").clicked() {
-                self.images.clear();
+                self.sources.clear();
             }
         });
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::both().show(ui, |ui| {
-                for (_, image) in &self.images {
-                    ui.image(image.texture_id(ctx), image.size_vec2());
-                }
             });
         });
     }
