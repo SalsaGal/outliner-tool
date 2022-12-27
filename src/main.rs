@@ -12,7 +12,7 @@ use picture::{Filter, Picture};
 use rfd::FileDialog;
 use serde::{Serialize, Deserialize};
 
-const VERSION: &str = "0.2.0";
+const VERSION: &str = "0.2.1";
 
 fn main() {
     eframe::run_native(
@@ -144,6 +144,7 @@ impl App for ProcessApp {
             if let Some(last_filter) = &self.config.last_filter {
                 if ui.button("Load last settings").clicked() {
                     self.filter = Filter::new(last_filter);
+                    filter_changed = true;
                 }
             }
             if filter_changed {
