@@ -3,13 +3,14 @@ mod picture;
 use std::{
     fs::{read_to_string, File},
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use eframe::App;
 use egui::{color_picker::color_edit_button_rgba, Rgba, Slider};
 use picture::{Filter, Picture};
 use rfd::FileDialog;
+use serde::{Serialize, Deserialize};
 
 const VERSION: &str = "0.1.0";
 
@@ -24,6 +25,7 @@ fn main() {
 struct ProcessApp {
     pictures: Vec<Picture>,
     filter: Filter,
+    config: Config,
     scale: f32,
 }
 
@@ -32,6 +34,7 @@ impl ProcessApp {
         Self {
             pictures: Vec::new(),
             filter: Filter::default(),
+            config: Config::new(),
             scale: 1.0,
         }
     }
@@ -146,5 +149,21 @@ impl App for ProcessApp {
                 }
             });
         });
+    }
+}
+
+#[derive(Default, Serialize, Deserialize)]
+struct Config {
+    last_filter: Option<PathBuf>,
+}
+
+impl Config {
+    pub fn new() -> Self {
+        let path = dirs_next::config_dir().unwrap_or_else(|| std::env::current_dir().unwrap());
+        if let Ok(contents) = read_to_string(path) {
+            serde_json::from_str(&contents).unwrap_or_default()
+        } else {
+            Self::default()
+        }
     }
 }
