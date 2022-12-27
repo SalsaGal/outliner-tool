@@ -181,7 +181,7 @@ impl Config {
     }
 
     fn path() -> PathBuf {
-        let mut path = dirs_next::config_dir().unwrap_or_else(|| std::env::current_dir().unwrap());
+        let mut path = dirs_next::data_dir().unwrap_or_else(|| std::env::current_dir().unwrap());
         path.push("outliner");
         std::fs::create_dir_all(&path).unwrap();
         path.push("config.json");
