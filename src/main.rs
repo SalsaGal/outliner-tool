@@ -127,7 +127,8 @@ impl App for ProcessApp {
                     let mut file = File::create(path).unwrap();
                     write!(file, "{settings}").unwrap();
                 }
-            } else if ui.button("Load settings").clicked() {
+            }
+            if ui.button("Load settings").clicked() {
                 if let Some(path) = FileDialog::new().add_filter("json", &["json"]).pick_file() {
                     let settings = read_to_string(path).unwrap();
                     self.filter = serde_json::from_str(&settings).unwrap();
