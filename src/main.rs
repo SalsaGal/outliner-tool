@@ -1,10 +1,14 @@
 mod picture;
 
-use std::path::Path;
+use std::{
+    fs::{read_to_string, File},
+    io::Write,
+    path::Path,
+};
 
 use eframe::App;
-use egui::{Slider, color_picker::color_edit_button_rgba, Rgba};
-use picture::{Picture, Filter};
+use egui::{color_picker::color_edit_button_rgba, Rgba, Slider};
+use picture::{Filter, Picture};
 use rfd::FileDialog;
 
 const VERSION: &str = "0.1.0";
@@ -33,7 +37,8 @@ impl ProcessApp {
     }
 
     fn load_image<P: AsRef<Path>>(&mut self, path: P) {
-        self.pictures.push(Picture::new(path, &self.filter).unwrap());
+        self.pictures
+            .push(Picture::new(path, &self.filter).unwrap());
     }
 
     fn update_filtered(&mut self) {
@@ -113,6 +118,21 @@ impl App for ProcessApp {
             if background != self.filter.background {
                 self.filter.background = background;
                 changed = true;
+            }
+            if ui.button("Save settings").clicked() {
+                if let Some(mut path) = FileDialog::new().add_filter("json", &["json"]).save_file()
+                {
+                    path.set_extension("json");
+                    let settings = serde_json::to_string_pretty(&self.filter).unwrap();
+                    let mut file = File::create(path).unwrap();
+                    write!(file, "{settings}").unwrap();
+                }
+            } else if ui.button("Load settings").clicked() {
+                if let Some(path) = FileDialog::new().add_filter("json", &["json"]).pick_file() {
+                    let settings = read_to_string(path).unwrap();
+                    self.filter = serde_json::from_str(&settings).unwrap();
+                    changed = true;
+                }
             }
             if changed {
                 self.update_filtered();

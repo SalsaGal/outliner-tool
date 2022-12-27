@@ -1,9 +1,9 @@
 use std::path::Path;
 
-use egui::{Ui, Context, ColorImage};
+use egui::{ColorImage, Context, Ui};
 use egui_extras::RetainedImage;
-use image::{RgbaImage, Rgba};
-use serde::{Serialize, Deserialize};
+use image::{Rgba, RgbaImage};
+use serde::{Deserialize, Serialize};
 
 pub struct Picture {
     source: RgbaImage,
@@ -15,10 +15,16 @@ impl Picture {
     pub fn new<P: AsRef<Path>>(path: P, filter: &Filter) -> Option<Self> {
         let source = image::open(path).ok()?.to_rgba8();
         let filtered = filter.on_source(&source);
-        let drawn = RetainedImage::from_color_image("", ColorImage::from_rgba_unmultiplied(
-            [filtered.dimensions().0 as usize, filtered.dimensions().1 as usize],
-            filtered.as_flat_samples().as_slice(),
-        ));
+        let drawn = RetainedImage::from_color_image(
+            "",
+            ColorImage::from_rgba_unmultiplied(
+                [
+                    filtered.dimensions().0 as usize,
+                    filtered.dimensions().1 as usize,
+                ],
+                filtered.as_flat_samples().as_slice(),
+            ),
+        );
         Some(Self {
             source,
             filtered,
@@ -28,10 +34,16 @@ impl Picture {
 
     pub fn update(&mut self, filter: &Filter) {
         self.filtered = filter.on_source(&self.source);
-        self.drawn = RetainedImage::from_color_image("", ColorImage::from_rgba_unmultiplied(
-            [self.filtered.dimensions().0 as usize, self.filtered.dimensions().1 as usize],
-            self.filtered.as_flat_samples().as_slice(),
-        ));
+        self.drawn = RetainedImage::from_color_image(
+            "",
+            ColorImage::from_rgba_unmultiplied(
+                [
+                    self.filtered.dimensions().0 as usize,
+                    self.filtered.dimensions().1 as usize,
+                ],
+                self.filtered.as_flat_samples().as_slice(),
+            ),
+        );
     }
 
     pub fn draw(&self, ui: &mut Ui, ctx: &Context, scale: f32) {
@@ -39,7 +51,7 @@ impl Picture {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Filter {
     pub sensitivity: u8,
     pub outline: [u8; 4],
