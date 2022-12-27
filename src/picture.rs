@@ -3,6 +3,7 @@ use std::path::Path;
 use egui::{Ui, Context, ColorImage};
 use egui_extras::RetainedImage;
 use image::{RgbaImage, Rgba};
+use serde::{Serialize, Deserialize};
 
 pub struct Picture {
     source: RgbaImage,
@@ -38,10 +39,11 @@ impl Picture {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Filter {
     pub sensitivity: u8,
-    pub outline: egui::Rgba,
-    pub background: egui::Rgba,
+    pub outline: [u8; 4],
+    pub background: [u8; 4],
 }
 
 impl Filter {
@@ -49,9 +51,9 @@ impl Filter {
         RgbaImage::from_fn(source.width(), source.height(), |x, y| {
             let original = source.get_pixel(x, y);
             if original.0[3] < self.sensitivity {
-                Rgba(self.background.to_srgba_unmultiplied())
+                Rgba(self.background)
             } else {
-                Rgba(self.outline.to_srgba_unmultiplied())
+                Rgba(self.outline)
             }
         })
     }
@@ -61,8 +63,8 @@ impl Default for Filter {
     fn default() -> Self {
         Self {
             sensitivity: 128,
-            outline: egui::Rgba::from_rgba_unmultiplied(0.0, 0.0, 0.0, 1.0),
-            background: egui::Rgba::from_rgba_unmultiplied(0.0, 0.0, 0.0, 0.0),
+            outline: [0, 0, 0, 255],
+            background: [0, 0, 0, 0],
         }
     }
 }

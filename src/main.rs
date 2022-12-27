@@ -3,7 +3,7 @@ mod picture;
 use std::path::Path;
 
 use eframe::App;
-use egui::{Slider, color_picker::color_edit_button_rgba};
+use egui::{Slider, color_picker::color_edit_button_rgba, Rgba};
 use picture::{Picture, Filter};
 use rfd::FileDialog;
 
@@ -78,13 +78,25 @@ impl App for ProcessApp {
             ui.label("Sensitivity");
             ui.add(Slider::new(&mut sensitivity, 0..=255));
 
-            let mut outline = self.filter.outline;
+            let mut outline = Rgba::from_srgba_unmultiplied(
+                self.filter.outline[0],
+                self.filter.outline[1],
+                self.filter.outline[2],
+                self.filter.outline[3],
+            );
             ui.label("Outline");
             color_edit_button_rgba(ui, &mut outline, egui::color_picker::Alpha::Opaque);
+            let outline = outline.to_srgba_unmultiplied();
 
-            let mut background = self.filter.background;
+            let mut background = Rgba::from_srgba_unmultiplied(
+                self.filter.background[0],
+                self.filter.background[1],
+                self.filter.background[2],
+                self.filter.background[3],
+            );
             ui.label("Background");
             color_edit_button_rgba(ui, &mut background, egui::color_picker::Alpha::OnlyBlend);
+            let background = background.to_srgba_unmultiplied();
 
             ui.label("Scale");
             ui.add(Slider::new(&mut self.scale, 0.125..=4.0));
