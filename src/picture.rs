@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, fs::read_to_string};
 
 use egui::{ColorImage, Context, Ui};
 use egui_extras::RetainedImage;
@@ -59,6 +59,11 @@ pub struct Filter {
 }
 
 impl Filter {
+    pub fn new<P: AsRef<Path>>(path: P) -> Self {
+        let contents = read_to_string(path).unwrap();
+        serde_json::from_str(&contents).unwrap()
+    }
+
     fn on_source(&self, source: &RgbaImage) -> RgbaImage {
         RgbaImage::from_fn(source.width(), source.height(), |x, y| {
             let original = source.get_pixel(x, y);

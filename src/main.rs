@@ -109,36 +109,44 @@ impl App for ProcessApp {
             ui.label("Scale");
             ui.add(Slider::new(&mut self.scale, 0.125..=4.0));
 
-            let mut changed = false;
+            let mut filter_changed = false;
             if sensitivity != self.filter.sensitivity {
                 self.filter.sensitivity = sensitivity;
-                changed = true;
+                filter_changed = true;
             }
             if outline != self.filter.outline {
                 self.filter.outline = outline;
-                changed = true;
+                filter_changed = true;
             }
             if background != self.filter.background {
                 self.filter.background = background;
-                changed = true;
+                filter_changed = true;
             }
             if ui.button("Save settings").clicked() {
                 if let Some(mut path) = FileDialog::new().add_filter("json", &["json"]).save_file()
                 {
                     path.set_extension("json");
                     let settings = serde_json::to_string_pretty(&self.filter).unwrap();
-                    let mut file = File::create(path).unwrap();
+                    let mut file = File::create(&path).unwrap();
                     write!(file, "{settings}").unwrap();
+                    self.config.last_filter = Some(path);
+                    self.config.save();
                 }
             }
             if ui.button("Load settings").clicked() {
                 if let Some(path) = FileDialog::new().add_filter("json", &["json"]).pick_file() {
-                    let settings = read_to_string(path).unwrap();
-                    self.filter = serde_json::from_str(&settings).unwrap();
-                    changed = true;
+                    self.filter = Filter::new(&path);
+                    self.config.last_filter = Some(path);
+                    self.config.save();
+                    filter_changed = true;
                 }
             }
-            if changed {
+            if let Some(last_filter) = &self.config.last_filter {
+                if ui.button("Load last settings").clicked() {
+                    self.filter = Filter::new(last_filter);
+                }
+            }
+            if filter_changed {
                 self.update_filtered();
             }
         });
@@ -159,11 +167,24 @@ struct Config {
 
 impl Config {
     pub fn new() -> Self {
-        let path = dirs_next::config_dir().unwrap_or_else(|| std::env::current_dir().unwrap());
-        if let Ok(contents) = read_to_string(path) {
+        if let Ok(contents) = read_to_string(Self::path()) {
             serde_json::from_str(&contents).unwrap_or_default()
         } else {
             Self::default()
         }
+    }
+
+    pub fn save(&self) {
+        let mut file = File::create(Self::path()).unwrap();
+        let contents = serde_json::to_string_pretty(&self).unwrap();
+        write!(file, "{contents}").unwrap();
+    }
+
+    fn path() -> PathBuf {
+        let mut path = dirs_next::config_dir().unwrap_or_else(|| std::env::current_dir().unwrap());
+        path.push("outliner");
+        std::fs::create_dir_all(&path).unwrap();
+        path.push("config.json");
+        path
     }
 }
