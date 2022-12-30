@@ -1,4 +1,4 @@
-use std::{path::Path, fs::read_to_string};
+use std::{path::Path, fs::read_to_string, collections::HashMap};
 
 use egui::{ColorImage, Context, Ui};
 use egui_extras::RetainedImage;
@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 pub struct Picture {
     source: RgbaImage,
+    background: [u8; 4],
     pub filtered: RgbaImage,
     drawn: RetainedImage,
 }
@@ -14,7 +15,12 @@ pub struct Picture {
 impl Picture {
     pub fn new<P: AsRef<Path>>(path: P, filter: &Filter) -> Option<Self> {
         let source = image::open(path).ok()?.to_rgba8();
-        let filtered = filter.on_source(&source);
+        let color_count = source.pixels().fold(HashMap::<_, usize>::new(), |mut acc, x| {
+            *acc.entry(x).or_default() += 1;
+            acc
+        });
+        let background = color_count.into_iter().max_by(|(_, a), (_, b)| a.cmp(b)).unwrap().0.0;
+        let filtered = filter.on_source(&source, background);
         let drawn = RetainedImage::from_color_image(
             "",
             ColorImage::from_rgba_unmultiplied(
@@ -25,15 +31,17 @@ impl Picture {
                 filtered.as_flat_samples().as_slice(),
             ),
         );
+
         Some(Self {
             source,
+            background,
             filtered,
             drawn,
         })
     }
 
     pub fn update(&mut self, filter: &Filter) {
-        self.filtered = filter.on_source(&self.source);
+        self.filtered = filter.on_source(&self.source, self.background);
         self.drawn = RetainedImage::from_color_image(
             "",
             ColorImage::from_rgba_unmultiplied(
@@ -64,10 +72,11 @@ impl Filter {
         serde_json::from_str(&contents).unwrap()
     }
 
-    fn on_source(&self, source: &RgbaImage) -> RgbaImage {
+    fn on_source(&self, source: &RgbaImage, background: [u8; 4]) -> RgbaImage {
         RgbaImage::from_fn(source.width(), source.height(), |x, y| {
             let original = source.get_pixel(x, y);
-            if original.0[3] < self.sensitivity {
+            let distance = color_distance(background, original.0) / 4;
+            if (distance as u8) < self.sensitivity {
                 Rgba(self.background)
             } else {
                 Rgba(self.outline)
@@ -84,4 +93,14 @@ impl Default for Filter {
             background: [0, 0, 0, 0],
         }
     }
+}
+
+fn color_distance(a: [u8; 4], b: [u8; 4]) -> u16 {
+    if a[3] | b[3] == 0 {
+        return 0;
+    }
+    let a = a.map(|x| x as u16);
+    let b = b.map(|x| x as u16);
+    let diffs = a.iter().zip(b).map(|(a, b)| a.abs_diff(b));
+    diffs.sum()
 }
