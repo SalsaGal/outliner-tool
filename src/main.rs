@@ -14,7 +14,7 @@ use picture::{Filter, Picture};
 use rfd::FileDialog;
 use serde::{Deserialize, Serialize};
 
-const VERSION: &str = "0.3.0";
+const VERSION: &str = "0.3.1";
 
 fn main() {
     eframe::run_native(
