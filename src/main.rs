@@ -206,6 +206,7 @@ impl App for ProcessApp {
 #[derive(Default, Serialize, Deserialize)]
 struct Config {
     last_filter: Option<PathBuf>,
+    error_time_secs: u16,
 }
 
 impl Config {
@@ -225,7 +226,7 @@ impl Config {
     }
 
     fn path() -> Result<PathBuf> {
-        let mut path = dirs_next::data_dir().unwrap_or_else(|| std::env::current_dir().unwrap());
+        let mut path = dirs_next::config_dir().unwrap_or_else(|| std::env::current_dir().unwrap());
         path.push("outliner");
         std::fs::create_dir_all(&path)?;
         path.push("config.json");
