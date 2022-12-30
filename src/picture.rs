@@ -1,4 +1,4 @@
-use std::{path::Path, fs::read_to_string, collections::HashMap};
+use std::{collections::HashMap, fs::read_to_string, path::Path};
 
 use anyhow::Result;
 use egui::{ColorImage, Context, Ui};
@@ -16,11 +16,18 @@ pub struct Picture {
 impl Picture {
     pub fn new<P: AsRef<Path>>(path: P, filter: &Filter) -> Result<Self> {
         let source = image::open(path)?.to_rgba8();
-        let color_count = source.pixels().fold(HashMap::<_, usize>::new(), |mut acc, x| {
-            *acc.entry(x).or_default() += 1;
-            acc
-        });
-        let background = color_count.into_iter().max_by(|(_, a), (_, b)| a.cmp(b)).unwrap().0.0;
+        let color_count = source
+            .pixels()
+            .fold(HashMap::<_, usize>::new(), |mut acc, x| {
+                *acc.entry(x).or_default() += 1;
+                acc
+            });
+        let background = color_count
+            .into_iter()
+            .max_by(|(_, a), (_, b)| a.cmp(b))
+            .unwrap()
+            .0
+             .0;
         let filtered = filter.on_source(&source, background);
         let drawn = RetainedImage::from_color_image(
             "",

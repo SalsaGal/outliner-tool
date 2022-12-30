@@ -4,6 +4,7 @@ use std::{
     fs::{read_to_string, File},
     io::Write,
     path::{Path, PathBuf},
+    time::{Duration, Instant},
 };
 
 use anyhow::Result;
@@ -11,7 +12,7 @@ use eframe::App;
 use egui::{color_picker::color_edit_button_rgba, Rgba, Slider};
 use picture::{Filter, Picture};
 use rfd::FileDialog;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 const VERSION: &str = "0.3.0";
 
@@ -28,7 +29,7 @@ struct ProcessApp {
     filter: Filter,
     config: Config,
     scale: f32,
-    errors: Vec<String>,
+    errors: Vec<(String, Instant)>,
 }
 
 impl ProcessApp {
@@ -52,6 +53,10 @@ impl ProcessApp {
             picture.update(&self.filter);
         }
     }
+
+    fn error_hide() -> Instant {
+        Instant::now() + Duration::from_secs(5)
+    }
 }
 
 impl App for ProcessApp {
@@ -59,7 +64,7 @@ impl App for ProcessApp {
         for file in &ctx.input().raw.dropped_files {
             if let Some(path) = &file.path {
                 if let Err(err) = self.load_image(path) {
-                    self.errors.push(err.to_string());
+                    self.errors.push((err.to_string(), Self::error_hide()));
                 }
             }
         }
@@ -71,7 +76,7 @@ impl App for ProcessApp {
                 if let Some(paths) = FileDialog::new().pick_files() {
                     for path in paths {
                         if let Err(err) = self.load_image(path) {
-                            self.errors.push(err.to_string());
+                            self.errors.push((err.to_string(), Self::error_hide()));
                         }
                     }
                 }
@@ -85,7 +90,7 @@ impl App for ProcessApp {
                         let mut path = folder.clone();
                         path.push(format!("{index}.png"));
                         if let Err(err) = picture.filtered.save(path) {
-                            self.errors.push(err.to_string());
+                            self.errors.push((err.to_string(), Self::error_hide()));
                         }
                     }
                 }
@@ -141,10 +146,10 @@ impl App for ProcessApp {
                             write!(file, "{settings}").unwrap();
                             self.config.last_filter = Some(path);
                             if let Err(err) = self.config.save() {
-                                self.errors.push(err.to_string());
+                                self.errors.push((err.to_string(), Self::error_hide()));
                             }
                         }
-                        Err(err) => self.errors.push(err.to_string()),
+                        Err(err) => self.errors.push((err.to_string(), Self::error_hide())),
                     }
                 }
             }
@@ -155,11 +160,11 @@ impl App for ProcessApp {
                             self.filter = filter;
                             self.config.last_filter = Some(path);
                             if let Err(err) = self.config.save() {
-                                self.errors.push(err.to_string());
+                                self.errors.push((err.to_string(), Self::error_hide()));
                             }
                             filter_changed = true;
                         }
-                        Err(err) => self.errors.push(err.to_string()),
+                        Err(err) => self.errors.push((err.to_string(), Self::error_hide())),
                     }
                 }
             }
@@ -170,7 +175,7 @@ impl App for ProcessApp {
                             self.filter = filter;
                             filter_changed = true;
                         }
-                        Err(err) => self.errors.push(err.to_string()),
+                        Err(err) => self.errors.push((err.to_string(), Self::error_hide())),
                     }
                 }
             }
@@ -178,9 +183,15 @@ impl App for ProcessApp {
                 self.update_filtered();
             }
 
-            for error in &self.errors {
+            for (error, _) in self.errors.iter() {
                 ui.label(error);
             }
+            self.errors = self
+                .errors
+                .clone()
+                .into_iter()
+                .filter(|(_, time)| *time >= Instant::now())
+                .collect();
         });
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::both().show(ui, |ui| {
