@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs::read_to_string, path::Path};
 
 use anyhow::Result;
-use egui::{ColorImage, Context, Ui, TextureOptions};
+use egui::{ColorImage, Context, TextureOptions, Ui};
 use egui_extras::RetainedImage;
 use image::{Rgba, RgbaImage};
 use serde::{Deserialize, Serialize};
@@ -38,7 +38,8 @@ impl Picture {
                 ],
                 filtered.as_flat_samples().as_slice(),
             ),
-        ).with_options(TextureOptions::NEAREST);
+        )
+        .with_options(TextureOptions::NEAREST);
 
         Ok(Self {
             source,
@@ -59,7 +60,8 @@ impl Picture {
                 ],
                 self.filtered.as_flat_samples().as_slice(),
             ),
-        ).with_options(TextureOptions::NEAREST);
+        )
+        .with_options(TextureOptions::NEAREST);
     }
 
     pub fn draw(&self, ui: &mut Ui, ctx: &Context, scale: f32) {
