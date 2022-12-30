@@ -1,11 +1,12 @@
 [package]
 name = "outliner"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.68"
 dirs-next = "2.0.0"
 eframe = "0.20.1"
 egui = "0.20.1"

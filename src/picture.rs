@@ -1,5 +1,6 @@
 use std::{path::Path, fs::read_to_string, collections::HashMap};
 
+use anyhow::Result;
 use egui::{ColorImage, Context, Ui};
 use egui_extras::RetainedImage;
 use image::{Rgba, RgbaImage};
@@ -13,8 +14,8 @@ pub struct Picture {
 }
 
 impl Picture {
-    pub fn new<P: AsRef<Path>>(path: P, filter: &Filter) -> Option<Self> {
-        let source = image::open(path).ok()?.to_rgba8();
+    pub fn new<P: AsRef<Path>>(path: P, filter: &Filter) -> Result<Self> {
+        let source = image::open(path)?.to_rgba8();
         let color_count = source.pixels().fold(HashMap::<_, usize>::new(), |mut acc, x| {
             *acc.entry(x).or_default() += 1;
             acc
@@ -32,7 +33,7 @@ impl Picture {
             ),
         );
 
-        Some(Self {
+        Ok(Self {
             source,
             background,
             filtered,
@@ -67,9 +68,9 @@ pub struct Filter {
 }
 
 impl Filter {
-    pub fn new<P: AsRef<Path>>(path: P) -> Self {
-        let contents = read_to_string(path).unwrap();
-        serde_json::from_str(&contents).unwrap()
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let contents = read_to_string(path)?;
+        Ok(serde_json::from_str(&contents)?)
     }
 
     fn on_source(&self, source: &RgbaImage, background: [u8; 4]) -> RgbaImage {

@@ -6,13 +6,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::Result;
 use eframe::App;
 use egui::{color_picker::color_edit_button_rgba, Rgba, Slider};
 use picture::{Filter, Picture};
 use rfd::FileDialog;
 use serde::{Serialize, Deserialize};
 
-const VERSION: &str = "0.2.1";
+const VERSION: &str = "0.3.0";
 
 fn main() {
     eframe::run_native(
@@ -27,6 +28,7 @@ struct ProcessApp {
     filter: Filter,
     config: Config,
     scale: f32,
+    errors: Vec<String>,
 }
 
 impl ProcessApp {
@@ -34,14 +36,15 @@ impl ProcessApp {
         Self {
             pictures: Vec::new(),
             filter: Filter::default(),
-            config: Config::new(),
+            config: Config::new().unwrap_or_default(),
             scale: 1.0,
+            errors: Vec::new(),
         }
     }
 
-    fn load_image<P: AsRef<Path>>(&mut self, path: P) {
-        self.pictures
-            .push(Picture::new(path, &self.filter).unwrap());
+    fn load_image<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        self.pictures.push(Picture::new(path, &self.filter)?);
+        Ok(())
     }
 
     fn update_filtered(&mut self) {
@@ -55,7 +58,9 @@ impl App for ProcessApp {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         for file in &ctx.input().raw.dropped_files {
             if let Some(path) = &file.path {
-                self.load_image(path);
+                if let Err(err) = self.load_image(path) {
+                    self.errors.push(err.to_string());
+                }
             }
         }
 
@@ -65,7 +70,9 @@ impl App for ProcessApp {
             if ui.button("Open images").clicked() {
                 if let Some(paths) = FileDialog::new().pick_files() {
                     for path in paths {
-                        self.load_image(path);
+                        if let Err(err) = self.load_image(path) {
+                            self.errors.push(err.to_string());
+                        }
                     }
                 }
             }
@@ -77,7 +84,9 @@ impl App for ProcessApp {
                     for (index, picture) in self.pictures.iter().enumerate() {
                         let mut path = folder.clone();
                         path.push(format!("{index}.png"));
-                        picture.filtered.save(path).unwrap();
+                        if let Err(err) = picture.filtered.save(path) {
+                            self.errors.push(err.to_string());
+                        }
                     }
                 }
             }
@@ -127,28 +136,50 @@ impl App for ProcessApp {
                 {
                     path.set_extension("json");
                     let settings = serde_json::to_string_pretty(&self.filter).unwrap();
-                    let mut file = File::create(&path).unwrap();
-                    write!(file, "{settings}").unwrap();
-                    self.config.last_filter = Some(path);
-                    self.config.save();
+                    match File::create(&path) {
+                        Ok(mut file) => {
+                            write!(file, "{settings}").unwrap();
+                            self.config.last_filter = Some(path);
+                            if let Err(err) = self.config.save() {
+                                self.errors.push(err.to_string());
+                            }
+                        }
+                        Err(err) => self.errors.push(err.to_string()),
+                    }
                 }
             }
             if ui.button("Load settings").clicked() {
                 if let Some(path) = FileDialog::new().add_filter("json", &["json"]).pick_file() {
-                    self.filter = Filter::new(&path);
-                    self.config.last_filter = Some(path);
-                    self.config.save();
-                    filter_changed = true;
+                    match Filter::new(&path) {
+                        Ok(filter) => {
+                            self.filter = filter;
+                            self.config.last_filter = Some(path);
+                            if let Err(err) = self.config.save() {
+                                self.errors.push(err.to_string());
+                            }
+                            filter_changed = true;
+                        }
+                        Err(err) => self.errors.push(err.to_string()),
+                    }
                 }
             }
             if let Some(last_filter) = &self.config.last_filter {
                 if ui.button("Load last settings").clicked() {
-                    self.filter = Filter::new(last_filter);
-                    filter_changed = true;
+                    match Filter::new(last_filter) {
+                        Ok(filter) => {
+                            self.filter = filter;
+                            filter_changed = true;
+                        }
+                        Err(err) => self.errors.push(err.to_string()),
+                    }
                 }
             }
             if filter_changed {
                 self.update_filtered();
+            }
+
+            for error in &self.errors {
+                ui.label(error);
             }
         });
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -167,25 +198,26 @@ struct Config {
 }
 
 impl Config {
-    pub fn new() -> Self {
-        if let Ok(contents) = read_to_string(Self::path()) {
-            serde_json::from_str(&contents).unwrap_or_default()
+    pub fn new() -> Result<Self> {
+        if let Ok(contents) = read_to_string(Self::path()?) {
+            Ok(serde_json::from_str(&contents).unwrap_or_default())
         } else {
-            Self::default()
+            Ok(Self::default())
         }
     }
 
-    pub fn save(&self) {
-        let mut file = File::create(Self::path()).unwrap();
-        let contents = serde_json::to_string_pretty(&self).unwrap();
-        write!(file, "{contents}").unwrap();
+    pub fn save(&self) -> Result<()> {
+        let mut file = File::create(Self::path()?)?;
+        let contents = serde_json::to_string_pretty(&self)?;
+        write!(file, "{contents}")?;
+        Ok(())
     }
 
-    fn path() -> PathBuf {
+    fn path() -> Result<PathBuf> {
         let mut path = dirs_next::data_dir().unwrap_or_else(|| std::env::current_dir().unwrap());
         path.push("outliner");
-        std::fs::create_dir_all(&path).unwrap();
+        std::fs::create_dir_all(&path)?;
         path.push("config.json");
-        path
+        Ok(path)
     }
 }
