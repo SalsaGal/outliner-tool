@@ -14,14 +14,14 @@ use picture::{Filter, Picture};
 use rfd::FileDialog;
 use serde::{Deserialize, Serialize};
 
-const VERSION: &str = "0.3.1";
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() {
     eframe::run_native(
         "Outliner",
         eframe::NativeOptions::default(),
         Box::new(|_cc| Box::new(ProcessApp::new())),
-    )
+    );
 }
 
 struct ProcessApp {
@@ -183,7 +183,7 @@ impl App for ProcessApp {
                 self.update_filtered();
             }
 
-            for (error, _) in self.errors.iter() {
+            for (error, _) in &self.errors {
                 ui.label(error);
             }
             self.errors = self

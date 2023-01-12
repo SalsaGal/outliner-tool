@@ -109,8 +109,8 @@ fn color_distance(a: [u8; 4], b: [u8; 4]) -> u16 {
     if a[3] | b[3] == 0 {
         return 0;
     }
-    let a = a.map(|x| x as u16);
-    let b = b.map(|x| x as u16);
+    let a = a.map(u16::from);
+    let b = b.map(u16::from);
     let diffs = a.iter().zip(b).map(|(a, b)| a.abs_diff(b));
     diffs.sum()
 }
