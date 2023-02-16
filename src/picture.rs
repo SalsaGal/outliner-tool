@@ -82,7 +82,13 @@ impl Filter {
         Ok(serde_json::from_str(&contents)?)
     }
 
-    fn make_pixel(&self, source: &RgbaImage, original_background: [u8; 4], x: u32, y: u32) -> Rgba<u8> {
+    fn make_pixel(
+        &self,
+        source: &RgbaImage,
+        original_background: [u8; 4],
+        x: u32,
+        y: u32,
+    ) -> Rgba<u8> {
         let original = source.get_pixel(x, y);
         let distance = color_distance(original_background, original.0) / 4;
         if (distance as u8) < self.sensitivity {
