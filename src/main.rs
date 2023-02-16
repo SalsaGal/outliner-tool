@@ -36,6 +36,9 @@ fn main() {
 
 #[cfg(target_family = "wasm")]
 fn main() {
+    console_error_panic_hook::set_once();
+    tracing_wasm::set_as_global_default();
+
     wasm_bindgen_futures::spawn_local(async {
         eframe::start_web(
             "canvas",
