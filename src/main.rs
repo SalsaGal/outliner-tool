@@ -1,8 +1,14 @@
 mod picture;
 
+#[cfg(not(target_family = "wasm"))]
 use std::{
     fs::{read_to_string, File},
     io::Write,
+    path::{Path, PathBuf},
+    time::{Duration, Instant},
+};
+#[cfg(target_family = "wasm")]
+use std::{
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
@@ -11,11 +17,18 @@ use anyhow::Result;
 use eframe::App;
 use egui::{color_picker::color_edit_button_rgba, Rgba, Slider};
 use picture::{Filter, Picture};
+#[cfg(not(target_family = "wasm"))]
 use rfd::FileDialog;
+#[cfg(target_family = "wasm")]
+use {
+    pollster::block_on,
+    rfd::AsyncFileDialog,
+};
 use serde::{Deserialize, Serialize};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+#[cfg(not(target_family = "wasm"))]
 fn main() {
     eframe::run_native(
         "Outliner",
@@ -24,9 +37,21 @@ fn main() {
     );
 }
 
+#[cfg(target_family = "wasm")]
+fn main() {
+    wasm_bindgen_futures::spawn_local(async {
+        eframe::start_web(
+            "canvas",
+            eframe::WebOptions::default(),
+            Box::new(|_cc| Box::new(ProcessApp::new())),
+        ).await.unwrap();
+    });
+}
+
 struct ProcessApp {
     pictures: Vec<Picture>,
     filter: Filter,
+    #[cfg(not(target_family = "wasm"))]
     config: Config,
     scale: f32,
     errors: Vec<(String, Instant)>,
@@ -37,6 +62,7 @@ impl ProcessApp {
         Self {
             pictures: Vec::new(),
             filter: Filter::default(),
+            #[cfg(not(target_family = "wasm"))]
             config: Config::new().unwrap_or_default(),
             scale: 1.0,
             errors: Vec::new(),
@@ -73,9 +99,18 @@ impl App for ProcessApp {
             ui.heading("Outliner");
             ui.label(format!("v{VERSION}"));
             if ui.button("Open images").clicked() {
+                #[cfg(not(target_family = "wasm"))]
                 if let Some(paths) = FileDialog::new().pick_files() {
                     for path in paths {
                         if let Err(err) = self.load_image(path) {
+                            self.errors.push((err.to_string(), Self::error_hide()));
+                        }
+                    }
+                }
+                #[cfg(target_family = "wasm")]
+                if let Some(paths) = block_on(AsyncFileDialog::new().pick_files()) {
+                    for path in paths {
+                        if let Err(err) = self.load_image(PathBuf::from(String::from_utf8(block_on(path.read())).unwrap())) {
                             self.errors.push((err.to_string(), Self::error_hide()));
                         }
                     }
@@ -84,6 +119,7 @@ impl App for ProcessApp {
             if ui.button("Clear images").clicked() {
                 self.pictures.clear();
             }
+            #[cfg(not(target_family = "wasm"))]
             if ui.button("Save images").clicked() {
                 if let Some(folder) = FileDialog::new().pick_folder() {
                     for (index, picture) in self.pictures.iter().enumerate() {
@@ -136,6 +172,7 @@ impl App for ProcessApp {
                 self.filter.background = background;
                 filter_changed = true;
             }
+            #[cfg(not(target_family = "wasm"))]
             if ui.button("Save settings").clicked() {
                 if let Some(mut path) = FileDialog::new().add_filter("json", &["json"]).save_file()
                 {
@@ -153,6 +190,7 @@ impl App for ProcessApp {
                     }
                 }
             }
+            #[cfg(not(target_family = "wasm"))]
             if ui.button("Load settings").clicked() {
                 if let Some(path) = FileDialog::new().add_filter("json", &["json"]).pick_file() {
                     match Filter::new(&path) {
@@ -168,6 +206,7 @@ impl App for ProcessApp {
                     }
                 }
             }
+            #[cfg(not(target_family = "wasm"))]
             if let Some(last_filter) = &self.config.last_filter {
                 if ui.button("Load last settings").clicked() {
                     match Filter::new(last_filter) {
@@ -209,6 +248,7 @@ struct Config {
     error_time_secs: u16,
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl Config {
     pub fn new() -> Result<Self> {
         if let Ok(contents) = read_to_string(Self::path()?) {

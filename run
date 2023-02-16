@@ -1,5 +1,5 @@
 [default]
-cargo run
+cargo build --target wasm32-unknown-unknown
 
 [check]
 cargo clippy

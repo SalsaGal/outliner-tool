@@ -1,4 +1,7 @@
+#[cfg(not(target_family = "wasm"))]
 use std::{collections::HashMap, fs::read_to_string, path::Path};
+#[cfg(target_family = "wasm")]
+use std::{collections::HashMap, path::Path};
 
 use anyhow::Result;
 use egui::{ColorImage, Context, TextureOptions, Ui};
@@ -77,6 +80,7 @@ pub struct Filter {
 }
 
 impl Filter {
+    #[cfg(not(target_family = "wasm"))]
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
         let contents = read_to_string(path)?;
         Ok(serde_json::from_str(&contents)?)
