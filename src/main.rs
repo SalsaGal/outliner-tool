@@ -19,12 +19,9 @@ use egui::{color_picker::color_edit_button_rgba, Rgba, Slider};
 use picture::{Filter, Picture};
 #[cfg(not(target_family = "wasm"))]
 use rfd::FileDialog;
-#[cfg(target_family = "wasm")]
-use {
-    pollster::block_on,
-    rfd::AsyncFileDialog,
-};
 use serde::{Deserialize, Serialize};
+#[cfg(target_family = "wasm")]
+use {pollster::block_on, rfd::AsyncFileDialog};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -44,7 +41,9 @@ fn main() {
             "canvas",
             eframe::WebOptions::default(),
             Box::new(|_cc| Box::new(ProcessApp::new())),
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
     });
 }
 
@@ -110,7 +109,9 @@ impl App for ProcessApp {
                 #[cfg(target_family = "wasm")]
                 if let Some(paths) = block_on(AsyncFileDialog::new().pick_files()) {
                     for path in paths {
-                        if let Err(err) = self.load_image(PathBuf::from(String::from_utf8(block_on(path.read())).unwrap())) {
+                        if let Err(err) = self.load_image(PathBuf::from(
+                            String::from_utf8(block_on(path.read())).unwrap(),
+                        )) {
                             self.errors.push((err.to_string(), Self::error_hide()));
                         }
                     }
